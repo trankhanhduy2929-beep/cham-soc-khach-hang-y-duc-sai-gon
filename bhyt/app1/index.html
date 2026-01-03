@@ -1,1 +1,443 @@
-gg
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Thống Kê Bảng Kê Pro</title>
+    <!-- Thư viện xử lý Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <!-- Thư viện Biểu đồ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font chữ & Icon -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #2d3748;
+            --accent-color: #667eea;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* --- Common Styles --- */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+        .btn-primary:hover { background: #5a6fd6; transform: translateY(-2px); }
+        .btn-danger { background: #fc8181; color: white; }
+        .btn-secondary { background: #e2e8f0; color: #4a5568; }
+
+        .hidden { display: none !important; }
+
+        /* --- Login Section --- */
+        .login-card {
+            background: var(--glass-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .login-card h2 { margin-bottom: 10px; color: var(--accent-color); }
+        .login-subtitle { margin-bottom: 25px; color: #718096; font-size: 0.9rem; }
+        
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600; }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            outline: none;
+            transition: border 0.3s;
+            font-size: 1rem;
+        }
+        .input-group input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+
+        /* --- Dashboard Section --- */
+        .dashboard-container {
+            background: #f7fafc;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 85vh;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
+        .user-menu { display: flex; gap: 10px; }
+        
+        @media (max-width: 600px) {
+            .top-bar { flex-direction: column; gap: 15px; }
+            .user-menu { width: 100%; justify-content: space-between; }
+        }
+
+        /* Content */
+        .main-content {
+            padding: 30px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .upload-area {
+            background: white;
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .upload-area:hover { border-color: var(--accent-color); background: #f8fbff; transform: scale(1.01); }
+        .upload-icon { font-size: 3rem; color: var(--accent-color); margin-bottom: 10px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .card h3 { margin-bottom: 15px; border-left: 4px solid var(--accent-color); padding-left: 10px; font-size: 1.1rem; }
+
+        /* Table Styling */
+        .table-container {
+            flex: 1;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 12px; text-align: left; position: sticky; top: 0; color: #4a5568; font-size: 0.9rem; border-bottom: 2px solid #edf2f7; }
+        td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        tr:hover { background-color: #f1f5f9; }
+        .total-row td { background: #ebf4ff; font-weight: bold; color: var(--accent-color); position: sticky; bottom: 0; }
+
+        /* Modal */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. MÀN HÌNH ĐĂNG NHẬP -->
+    <div id="loginSection" class="login-card">
+        <div style="font-size: 3.5rem; color: var(--accent-color); margin-bottom: 15px;">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2>Hệ Thống Bảo Mật</h2>
+        <p class="login-subtitle">Vui lòng nhập mã truy cập để tiếp tục</p>
+        
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Nhập mã pin..." onkeyup="if(event.key === 'Enter') login()">
+        </div>
+        
+        <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="login()">Xác thực</button>
+        <p id="loginError" style="color: #e53e3e; margin-top: 15px; font-size: 0.9rem; min-height: 20px;"></p>
+    </div>
+
+    <!-- 2. GIAO DIỆN CHÍNH -->
+    <div id="dashboardSection" class="dashboard-container hidden">
+        <header class="top-bar">
+            <div class="logo">
+                <span style="background: var(--accent-color); color: white; padding: 5px 10px; border-radius: 6px;"><i class="fa-solid fa-chart-simple"></i></span>
+                Pro Statistics Tool
+            </div>
+            <div class="user-menu">
+                <button class="btn btn-secondary" onclick="openChangePassModal()"><i class="fa-solid fa-key"></i> Cấu hình</button>
+                <button class="btn btn-danger" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="upload-area" onclick="document.getElementById('excelFile').click()">
+                <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <h3 style="color: #4a5568;">Click để chọn file Excel (.xlsx, .csv)</h3>
+                <p id="status" style="color: #718096; margin-top: 5px;">Hệ thống tự động phân tích cột 'Ngày ra'</p>
+                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFile(event)" />
+            </div>
+
+            <div id="resultArea" class="stats-grid hidden">
+                <div class="card">
+                    <h3><i class="fa-solid fa-list-ol"></i> Bảng Số Liệu Chi Tiết</h3>
+                    <div class="table-container">
+                        <table id="resultTable">
+                            <thead>
+                                <tr>
+                                    <th width="15%">STT</th>
+                                    <th>Ngày ra</th>
+                                    <th width="25%">Số lượng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="2">TỔNG CỘNG</td>
+                                    <td id="totalCount">0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fa-solid fa-chart-column"></i> Biểu Đồ Trực Quan</h3>
+                    <div style="position: relative; height: 100%; min-height: 300px; display: flex; align-items: center;">
+                        <canvas id="myChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MODAL ĐỔI MẬT KHẨU -->
+    <div id="changePassModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 5px; color: var(--text-color);">Cài Đặt Truy Cập</h3>
+            <p style="margin-bottom: 20px; font-size: 0.85rem; color: #718096;">Thay đổi mã pin truy cập hệ thống.</p>
+            
+            <div class="input-group">
+                <label>Mã pin hiện tại</label>
+                <input type="password" id="oldPass">
+            </div>
+            <div class="input-group">
+                <label>Mã pin mới</label>
+                <input type="password" id="newPass">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeChangePassModal()">Đóng</button>
+                <button class="btn btn-primary" onclick="saveNewPass()">Cập nhật</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIG & AUTHENTICATION ---
+        const DEFAULT_KEYS = ['1402', '2912'];
+        
+        (function initAuth() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                showDashboard();
+            }
+        })();
+
+        function login() {
+            const p = document.getElementById('password').value;
+            const storedKey = localStorage.getItem('app_key');
+            const isChanged = localStorage.getItem('key_changed') === 'true';
+
+            let accessGranted = false;
+
+            if (!isChanged) {
+                // Nếu chưa đổi, chấp nhận 2 pass mặc định
+                if (DEFAULT_KEYS.includes(p)) accessGranted = true;
+            } else {
+                // Nếu đã đổi, chỉ chấp nhận pass mới
+                if (p === storedKey) accessGranted = true;
+            }
+
+            if (accessGranted) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                showDashboard();
+                document.getElementById('password').value = '';
+                document.getElementById('loginError').innerText = "";
+            } else {
+                document.getElementById('loginError').innerText = "Mã truy cập không hợp lệ!";
+                const card = document.querySelector('.login-card');
+                card.style.animation = "shake 0.3s";
+                setTimeout(() => card.style.animation = "", 300);
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
+        function showDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+        }
+
+        // --- 2. CHANGE PASSWORD LOGIC ---
+        function openChangePassModal() {
+            document.getElementById('changePassModal').classList.remove('hidden');
+        }
+
+        function closeChangePassModal() {
+            document.getElementById('changePassModal').classList.add('hidden');
+        }
+
+        function saveNewPass() {
+            const oldP = document.getElementById('oldPass').value;
+            const newP = document.getElementById('newPass').value;
+            const storedKey = localStorage.getItem('app_key');
+            const isChanged = localStorage.getItem('key_changed') === 'true';
+
+            let verifyOld = false;
+            if (!isChanged) {
+                if (DEFAULT_KEYS.includes(oldP)) verifyOld = true;
+            } else {
+                if (oldP === storedKey) verifyOld = true;
+            }
+
+            if (!verifyOld) {
+                alert("Mã pin hiện tại không đúng!");
+                return;
+            }
+            if (!newP || newP.length < 4) {
+                alert("Mã pin mới phải từ 4 ký tự trở lên!");
+                return;
+            }
+
+            localStorage.setItem('app_key', newP);
+            localStorage.setItem('key_changed', 'true');
+            alert("Đã cập nhật mã truy cập mới!");
+            closeChangePassModal();
+        }
+
+        // --- 3. EXCEL & CHART ---
+        let myChartInstance = null;
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            const status = document.getElementById('status');
+            status.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...`;
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {raw: false});
+                    processData(jsonData);
+                    status.innerHTML = `<i class="fa-solid fa-check-circle" style="color: #48bb78;"></i> File: <b>${file.name}</b>`;
+                } catch (error) {
+                    status.innerText = "Lỗi định dạng file!";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processData(data) {
+            const dateCounts = {};
+            const colName = "Ngày ra";
+            data.forEach(row => {
+                let dateStr = row[colName];
+                if (dateStr) {
+                    let justDate = dateStr.split(' ')[0].trim();
+                    if (justDate) dateCounts[justDate] = (dateCounts[justDate] || 0) + 1;
+                }
+            });
+            let sortedDates = Object.keys(dateCounts).sort((a, b) => {
+                const pA = a.split('/'); const pB = b.split('/');
+                return new Date(pA[2], pA[1]-1, pA[0]) - new Date(pB[2], pB[1]-1, pB[0]);
+            });
+            if (sortedDates.length === 0) { alert("Không tìm thấy cột 'Ngày ra'!"); return; }
+            renderTable(sortedDates, dateCounts);
+            renderChart(sortedDates, dateCounts);
+            document.getElementById('resultArea').classList.remove('hidden');
+        }
+
+        function renderTable(dates, counts) {
+            const tbody = document.getElementById('tableBody');
+            let total = 0; let stt = 1; tbody.innerHTML = '';
+            dates.forEach(date => {
+                const c = counts[date]; total += c;
+                tbody.innerHTML += `<tr><td>${stt++}</td><td>${date}</td><td><strong>${c}</strong></td></tr>`;
+            });
+            document.getElementById('totalCount').innerText = total;
+        }
+
+        function renderChart(dates, counts) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (myChartInstance) myChartInstance.destroy();
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.9)');
+            gradient.addColorStop(1, 'rgba(118, 75, 162, 0.7)');
+            myChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{ label: 'Số lượng hồ sơ', data: dates.map(d => counts[d]), backgroundColor: gradient, borderRadius: 6 }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
